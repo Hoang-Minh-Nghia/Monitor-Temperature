@@ -1,0 +1,154 @@
+<head>
+	<script src="https://www.gstatic.com/firebasejs/5.4.0/firebase.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-streaming@1.9.0"></script>
+</head>
+
+<body>
+	<div>
+		<canvas id="myChart"></canvas>
+
+	</div>
+	<p>
+		<button id="Remove">Remove</button>
+	</p>
+	<script>
+		var chartColors = {
+			red: 'rgb(255, 99, 132)',
+			orange: 'rgb(255, 159, 64)',
+			yellow: 'rgb(255, 205, 86)',
+			green: 'rgb(75, 192, 192)',
+			blue: 'rgb(54, 162, 235)',
+			purple: 'rgb(153, 102, 255)',
+			grey: 'rgb(201, 203, 207)'
+		};
+
+
+		var color = Chart.helpers.color;
+		var config = {
+			type: 'line',
+			data: {
+
+				datasets: [{
+					label: 'Nhiệt độ vật thể',
+					backgroundColor: color(chartColors.red).alpha(0.5).rgbString(),
+					borderColor: chartColors.red,
+					fill: false,
+					lineTension: 0,
+					cubicInterpolationMode: 'monotone',
+					borderDash: [8, 4],
+					data: []
+				}, {
+					label: 'Nhiệt độ môi trường',
+					backgroundColor: color(chartColors.blue).alpha(0.5).rgbString(),
+					borderColor: chartColors.blue,
+					fill: false,
+					cubicInterpolationMode: 'monotone',
+					data: []
+				}]
+			},
+
+			options: {
+				title: {
+					display: true,
+				},
+				scales: {
+					xAxes: [{
+						type: 'realtime',
+						realtime: {
+							duration: 20000,
+							refresh: 1000,
+							delay: 2000,
+							onRefresh: onRefresh
+						}
+					}],
+					yAxes: [{
+						scaleLabel: {
+							display: true,
+							labelString: '°C'
+						}
+					}]
+				},
+				tooltips: {
+					mode: 'nearest',
+					intersect: false
+				},
+				hover: {
+					mode: 'nearest',
+					intersect: true
+				}
+			}
+		};
+
+		window.onload = function () {
+			var ctx = document.getElementById('myChart').getContext('2d');
+			window.myChart = new Chart(ctx, config);
+		};
+
+		var colorNames = Object.keys(chartColors);
+		document.getElementById('Remove').addEventListener('click', function () {
+			config.data.datasets.pop();
+			window.myChart.update();
+		});
+
+
+
+
+
+		var fb = {
+			apiKey: "AIzaSyAE67jiSi8HUegkT_xld_f3Hzm9ulj3koU",
+			authDomain: "projectId.firebaseapp.com",
+			databaseURL: "https://temperature-ad243-default-rtdb.firebaseio.com/",
+			projectId: "temperature-ad243",
+			storageBucket: "bucket.appspot.com",
+			messagingSenderId: "messagingSenderId"
+		};
+
+		firebase.initializeApp(fb);
+		var Ambient = 0;
+		var Ob = 0;
+
+		function getPost() {
+			data_Ambient = firebase.database().ref('/Temperature/Ambient');
+			data_Ambient.once('value', function (messages) {
+				result = messages.val();
+
+				console.log(result);
+
+				Ambient = result;
+			});
+			data_Object = firebase.database().ref('/Temperature/Object');
+			data_Object.once('value', function (messages) {
+				result = messages.val();
+				console.log(result);
+				Ob = result;
+			});
+		}
+		setInterval(function () {
+			getPost();
+			Ob;
+			Ambient;
+		}, 1000)
+
+
+		function getObject() {
+			return Ob;
+		}
+		function getAmbient() {
+			return Ambient;
+		}
+
+		function onRefresh(chart) {
+			var now = Date.now();
+			chart.data.datasets[0].data.push({
+				x: now,
+				y: getObject()
+			});
+			chart.data.datasets[1].data.push({
+				x: now,
+				y: getAmbient()
+			});
+		}
+	</script>
+</body>
